@@ -182,8 +182,8 @@ if uploaded_file and api_key:
         if st.button("Gerar Descrições"):
             if not colunas_para_ler:
                 st.error("Selecione pelo menos uma coluna para a IA ler.")
-            elif len(colunas_para_ler) > 20:
-                st.error(f"⚠️ Limite excedido: Você selecionou {len(colunas_para_ler)} colunas. O máximo permitido é 20 por vez.")
+            elif len(colunas_para_ler) > 500:
+                st.error(f"⚠️ Limite excedido: Você selecionou {len(colunas_para_ler)} colunas. O máximo permitido é 500 por vez.")
             else:
                 client = genai.Client(api_key=api_key)
                 
@@ -219,7 +219,7 @@ if uploaded_file and api_key:
                     progress_bar.progress((index + 1) / total_colunas)
                     status_text.text(f"Processando coluna {index + 1} de {total_colunas}...")
                     
-                    time.sleep(6.1)
+                    time.sleep(4.1)
                 
                 # Cria DataFrame com os resultados
                 df_resultado = pd.DataFrame({"Coluna": colunas_para_ler, "Descricao_IA": descricoes})
