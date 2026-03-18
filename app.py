@@ -19,16 +19,29 @@ st.subheader("Faça upload de uma planilha para gerar descrições para **vária
 with st.sidebar:
     st.header("🔑 Acesso")
     api_key = st.text_input("Cole sua API Key do Google:", type="password")
-    st.info("Modelo: gemini-2.5-flash")
+    st.info("Modelo: gemini-3.1-flash-lite")
     
     st.divider()
     st.warning("⚠️ Nota: O processamento pode levar alguns minutos dependendo do tamanho da planilha.")
     
 def gerar_descricao_row(dados_linha, client, total_amostras):
     prompt = f"""
-    Você é um consultor técnico experiente. Sua tarefa é descrever amostras para um relatório técnico.
-    Use linguagem formal, técnica e direta. Siga rigorosamente o padrão dos exemplos, descrevendo quantitativamente os resultados.
-    Considera o número total da amostra sendo {total_amostras}.
+    Você é um consultor técnico experiente e analista de dados. Sua tarefa é redigir o parágrafo descritivo de uma amostra para um relatório técnico acadêmico/corporativo.
+
+    DIRETRIZES RÍGIDAS:
+
+    Use linguagem formal, técnica, impessoal e direta.
+
+    NÃO INVENTE DADOS OU TIRE CONCLUSÕES FORA DA TABELA. Baseie-se exclusivamente nos números fornecidos na entrada.
+
+    NÃO FAÇA CÁLCULOS MATEMÁTICOS. Utilize apenas as quantidades e porcentagens já fornecidas no texto de entrada.
+
+    Cite sempre os números absolutos acompanhados de suas respectivas porcentagens para embasar as afirmações.
+
+    Siga rigorosamente o tom e a estrutura dos exemplos abaixo.
+
+    O tamanho total da amostra é: {total_amostras}.
+
 
     ### EXEMPLO 1
     Entrada: Gênero Qtd. Repres.
@@ -136,7 +149,7 @@ def gerar_descricao_row(dados_linha, client, total_amostras):
     """
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model="gemini-3.1-flash-lite-preview",
             contents=prompt
         )
         return response.text
@@ -184,8 +197,19 @@ if uploaded_file and api_key:
                 
                 # Loop por cada coluna selecionada
                 for index, col in enumerate(colunas_para_ler):
-                    # Monta o texto com os dados da coluna
-                    texto_dados = f"Coluna: {col}\nValores: {df[col].tolist()}"
+                    # Calcula a contagem e porcentagem usando pandas
+                    contagem = df[col].value_counts()
+                    porcentagens = df[col].value_counts(normalize=True) * 100
+                    
+                    # Formata os dados no padrão dos exemplos do prompt
+                    linhas_texto = [f"{col} Qtd. Repres."]
+                    for valor, qtd in contagem.items():
+                        rep = porcentagens[valor]
+                        # Substitui ponto por vírgula para o formato de porcentagem em PT-BR
+                        linhas_texto.append(f"{valor} {qtd} {rep:.2f}%".replace('.', ','))
+                    
+                    linhas_texto.append(f"Total geral {contagem.sum()} 100,00%")
+                    texto_dados = "\n".join(linhas_texto)
                     
                     # Chama a IA
                     resultado = gerar_descricao_row(texto_dados, client, len(df))
